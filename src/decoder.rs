@@ -152,7 +152,7 @@ fn read_osc_string<'a>(
     map_res(
         terminated(
             take_till(|c| c == 0u8),
-            pad_to_32_bit_boundary(original_input),
+            nullbit_then_pad_to_32_bit_boundary(original_input),
         ),
         |str_buf: &'a [u8]| {
             String::from_utf8(str_buf.into())
@@ -283,6 +283,16 @@ fn pad_to_32_bit_boundary<'a>(
 ) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], (), OscError> {
     move |input| {
         let offset = (4 - original_input.offset(input) % 4) % 4;
+        let (input, _) = take(offset)(input)?;
+        Ok((input, ()))
+    }
+}
+
+fn nullbit_then_pad_to_32_bit_boundary<'a>(
+    original_input: &'a [u8],
+) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], (), OscError> {
+    move |input| {
+        let offset = 4 - original_input.offset(input) % 4;
         let (input, _) = take(offset)(input)?;
         Ok((input, ()))
     }
